@@ -7,19 +7,18 @@ use serde::de::{
     value::SeqDeserializer
 };
 
-use postgres::rows::{Row, Rows};
-
+use tokio_postgres::row::Row;
 use error::{Error, Result};
 
 /// A structure that deserialize Postgres rows into Rust values.
-pub struct Deserializer<'a> {
-    input: Row<'a>,
+pub struct Deserializer {
+    input: Row,
     index: usize,
 }
 
-impl<'a> Deserializer<'a> {
+impl Deserializer {
     /// Create a `Row` deserializer from a `Row`.
-    pub fn from_row(input: Row<'a>) -> Self {
+    pub fn from_row(input: Row) -> Self {
         Self { index: 0, input }
     }
 }
@@ -31,12 +30,12 @@ pub fn from_row<'a, T: Deserialize<'a>>(input: Row) -> Result<T> {
 }
 
 /// Attempt to deserialize from `Rows`.
-pub fn from_rows<'a, T: Deserialize<'a>>(input: &'a Rows) -> Result<Vec<T>> {
-    input.into_iter().map(|row| {
-        let mut deserializer = Deserializer::from_row(row);
-        T::deserialize(&mut deserializer)
-    }).collect()
-}
+//pub fn from_rows<'a, T: Deserialize<'a>>(input: &'a Rows) -> Result<Vec<T>> {
+//    input.into_iter().map(|row| {
+//        let mut deserializer = Deserializer::from_row(row);
+//        T::deserialize(&mut deserializer)
+//    }).collect()
+//}
 
 macro_rules! unsupported_type {
     ($($fn_name:ident),*,) => {
@@ -50,13 +49,12 @@ macro_rules! unsupported_type {
 
 macro_rules! get_value {
     ($this:ident, $v:ident, $fn_call:ident, $ty:ty) => {{
-        $v.$fn_call($this.input.get_opt::<_, $ty>($this.index)
-            .unwrap()
+        $v.$fn_call($this.input.try_get::<_, $ty>($this.index)
             .map_err(|e| Error::InvalidType(format!("{:?}", e)))?)
     }}
 }
 
-impl<'de, 'a, 'b> de::Deserializer<'de> for &'b mut Deserializer<'a> {
+impl<'de, 'b> de::Deserializer<'de> for &'b mut Deserializer {
     type Error = Error;
 
     unsupported_type! {
@@ -118,17 +116,15 @@ impl<'de, 'a, 'b> de::Deserializer<'de> for &'b mut Deserializer<'a> {
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V)
         -> Result<V::Value>
     {
-
-        if self.input.get_bytes(self.index).is_some() {
-            visitor.visit_some(self)
-        } else {
+        if self.input.get::<_, &[u8]>(self.index).is_empty() {
             visitor.visit_none()
+        } else {
+            visitor.visit_some(self)
         }
     }
 
     fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-        let raw = self.input.get_opt::<_, Vec<u8>>(self.index)
-            .unwrap()
+        let raw = self.input.try_get::<_, Vec<u8>>(self.index)
             .map_err(|e| Error::InvalidType(format!("{:?}", e)))?;
 
         visitor.visit_seq(SeqDeserializer::new(raw.into_iter()))
@@ -181,7 +177,7 @@ impl<'de, 'a, 'b> de::Deserializer<'de> for &'b mut Deserializer<'a> {
     }
 }
 
-impl<'de, 'a> de::MapAccess<'de> for Deserializer<'a> {
+impl<'de> de::MapAccess<'de> for Deserializer {
     type Error = Error;
 
     fn next_key_seed<T: de::DeserializeSeed<'de>>(&mut self, seed: T)
