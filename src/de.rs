@@ -116,11 +116,7 @@ impl<'de, 'b> de::Deserializer<'de> for &'b mut Deserializer {
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V)
         -> Result<V::Value>
     {
-        if self.input.get::<_, &[u8]>(self.index).is_empty() {
-            visitor.visit_none()
-        } else {
-            visitor.visit_some(self)
-        }
+        visitor.visit_some(self)
     }
 
     fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
