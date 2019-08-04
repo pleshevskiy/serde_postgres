@@ -67,6 +67,7 @@ impl<'de, 'b> de::Deserializer<'de> for &'b mut Deserializer {
         deserialize_bytes,
         deserialize_unit,
         deserialize_identifier,
+        deserialize_option,
     }
 
     fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
@@ -111,12 +112,6 @@ impl<'de, 'b> de::Deserializer<'de> for &'b mut Deserializer {
 
     fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
         get_value!(self, visitor, visit_byte_buf, Vec<u8>)
-    }
-
-    fn deserialize_option<V: Visitor<'de>>(self, visitor: V)
-        -> Result<V::Value>
-    {
-        visitor.visit_some(self)
     }
 
     fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
