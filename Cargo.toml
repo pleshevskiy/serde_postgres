@@ -13,7 +13,7 @@ repository = "1aim/serde_postgres"
 
 [dependencies]
 serde = "1.0.80"
-tokio-postgres = { git = "https://github.com/sfackler/rust-postgres", rev = "5283ad4a" }
+tokio-postgres = { git = "https://github.com/sfackler/rust-postgres" }
 # postgres-derive = "0.3.3"
 
 [dev-dependencies]
