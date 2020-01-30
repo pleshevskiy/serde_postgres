@@ -56,5 +56,5 @@ extern crate tokio_postgres;
 pub mod de;
 pub mod error;
 
-pub use de::{from_row, Deserializer};
+pub use de::{from_row, from_rows, Deserializer};
 pub use error::{Error, Result};

@@ -30,12 +30,12 @@ pub fn from_row<'a, T: Deserialize<'a>>(input: Row) -> Result<T> {
 }
 
 /// Attempt to deserialize from `Rows`.
-//pub fn from_rows<'a, T: Deserialize<'a>>(input: &'a Rows) -> Result<Vec<T>> {
-//    input.into_iter().map(|row| {
-//        let mut deserializer = Deserializer::from_row(row);
-//        T::deserialize(&mut deserializer)
-//    }).collect()
-//}
+pub fn from_rows<'a, T: Deserialize<'a>>(input: Vec<Row>) -> Result<Vec<T>> {
+    input.into_iter().map(|row| {
+        let mut deserializer = Deserializer::from_row(row);
+        T::deserialize(&mut deserializer)
+    }).collect()
+}
 
 macro_rules! unsupported_type {
     ($($fn_name:ident),*,) => {
